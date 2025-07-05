@@ -1,0 +1,26 @@
+{% extends "admin/adminbase.html" %}
+
+{% block content %}
+<a class="back" href="/admin/tournaments">&larr; Back to tournaments</a>
+<h1>Add Tournament</h1>
+
+<form method="POST">
+    <label for="name">Tournament Name:</label><br>
+    <input type="text" id="name" name="name" required><br><br>
+
+    <label for="game_id">Select Game:</label><br>
+    <select id="game_id" name="game_id" required>
+        {% for game in games %}
+            <option value="{{ game.id }}">{{ game.name }}</option>
+        {% endfor %}
+    </select><br><br>
+
+    <label for="start_date">Start Time (optional):</label><br>
+    <input type="datetime-local" id="start_date" name="start_date"><br><br>
+
+    <label for="end_date">End Time (optional):</label><br>
+    <input type="datetime-local" id="end_date" name="end_date"><br><br>
+
+    <button type="submit">Create Tournament</button>
+</form>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tournament.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>Final Tournament Results</h1>
+
+<h2>Final Round-Robin Results</h2>
+<table>
+    <tr><th>Placement</th><th>Bot</th><th>Wins</th><th>Draws</th><th>Losses</th><th>Score</th></tr>
+    {% for bot, data in results.items() %}
+        <tr
+        {% if loop.index == 1 %} style="color: gold;" 
+        {% elif loop.index == 2 %} style="color: silver;" 
+        {% elif loop.index == 3 %} style="color: #cd7f32;"
+        {% endif %}>
+            <td>{{ loop.index }}</td>
+            <td>{{ bot }}</td>
+            <td>{{ data['win']|length }}</td>
+            <td>{{ data['draw']|length }}</td>
+            <td>{{ data['loss']|length }}</td>
+            <td>
+                {% set score = data['score'] if data['score'] is defined else data['win']|length + data['draw']|length * 0.5 %}
+                {% if score % 1 == 0 %}
+                    {{ score | int }}
+                {% else %}
+                    {% set rounded = "%.2f"|format(score) %}
+                    {{ rounded.rstrip('0').rstrip('.') }}
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+</table><br>
+
+{% if game_history %}
+    <h2>Round Robin Matches</h2>
+    {% for starter, opponents in game_history.items() %}
+        {% for opponent, states in opponents.items() %}
+            <details style="margin-bottom: 12px;">
+                {% set result = match_results[starter][opponent] if match_results and starter in match_results and opponent in match_results[starter] else "N/A" %}
+                {% if "won" in result %}
+                    {% set result_class = "decisive" %}
+                {% elif "Draw" in result %}
+                    {% set result_class = "match-draw" %}
+                {% else %}
+                    {% set result_class = "" %}
+                {% endif %}
+                <summary>
+                    <strong>{{ starter }}</strong> vs <strong>{{ opponent }}</strong>
+                    ({{ states | length - 1 }} turns) —
+                    <span class="{{ result_class }}">{{ result }}</span>
+                </summary>
+                <pre style="white-space: pre-wrap; background-color: #222; padding: 10px; color: #ddd; border-radius: 5px;">
+{% for state in states %}
+{% if loop.first %}
+--- Initial ---
+{% else %}
+--- Turn {{ loop.index0 }} ({{ starter if loop.index0 % 2 == 1 else opponent }}) ---
+{% endif %}
+{{ state }}
+{% endfor %}
+=== {{ result }} ===
+                </pre>
+            </details>
+        {% endfor %}
+    {% endfor %}
+{% else %}
+    <p>No round robin game history available.</p>
+{% endif %}
+
+{% if scores %}
+<h2>Swiss Standings</h2>
+<table>
+    <tr>
+        <th>Qual</th><th>Place</th><th>Bot</th>
+        <th>Wins</th><th>Draws</th><th>Losses</th>
+        <th>Score</th><th>Tiebreaks</th>
+    </tr>
+    {% for bot, score in scores %}
+        <tr {% if bot in results %} style="color: #88bb88;" {% endif %}>
+        <td>{% if bot in results %}Q{% else %}-{% endif %}</td>
+        <td>{{ loop.index }}</td>
+        <td>{{ bot }}</td>
+        <td>{{ score.win }}</td>
+        <td>{{ score.draw }}</td>
+        <td>{{ score.loss }}</td>
+        <td>
+        {% if score.score % 1 == 0 %}
+            {{ score.score | int }}
+        {% else %}
+            {% set raw_score = "%.2f"|format(score.score) %}
+            {{ raw_score.rstrip('0').rstrip('.') }}
+        {% endif %}
+        </td>
+        <td>
+        {% if score.sb % 1 == 0 %}
+            {{ score.sb | int }}
+        {% else %}
+            {% set sb_score = "%.2f"|format(score.sb) %}
+            {{ sb_score.rstrip('0').rstrip('.') }}
+        {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+
+</table>
+{% endif %}
+
+{% if swiss_log %}
+    <h2>Swiss Pairings</h2>
+    {% for round_pairings in swiss_log %}
+        <h3>Round {{ loop.index }}</h3>
+        <ul>
+            {% for starter, responder, result in round_pairings %}
+                <li>{{ starter }} vs {{ responder }} — 
+                    {% if result == '1' %}<strong>{{ starter }} wins</strong>
+                    {% elif result == '2' %}<strong>{{ responder }} wins</strong>
+                    {% else %}<strong>Draw</strong>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+{% endif %}
+
+{% endblock %}

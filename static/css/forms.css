@@ -78,6 +78,49 @@
 	outline: 1px solid rgb(233, 92, 92) !important;
 }
 
+.button-row {
+	display: flex;
+	gap: 12px;
+	margin-top: 16px;
+}
+
+.button-row input[type="submit"] {
+	background-color: #2d3249;
+	color: white;
+	border: none;
+	padding: 10px 20px;
+	border-radius: 8px;
+	font-size: 1rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+}
+
+.button-row input[type="submit"]:hover {
+	background-color: #3b405c;
+}
+
+.button-row button {
+	background-color: #2d3249;
+	color: white;
+	border: none;
+	padding: 10px 20px;
+	border-radius: 8px;
+	font-size: 1rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+}
+
+.button-row button:hover {
+	background-color: #3b405c;
+}
+
+.left-align {
+    margin-left: 0;
+    margin-right: auto;
+}
+
 @media screen and (max-width: 650px) {
 	.form-section-container {
 		display: block;

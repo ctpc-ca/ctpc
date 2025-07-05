@@ -21,6 +21,7 @@
 				<a href="/competitions/2025" class="navbar-year">2025</a>
 				{% if current_user.is_authenticated and (current_user.role.name == "tester" or current_user.role.name == "admin") %}
 					<a href="/competitions/2026" class="navbar-year">2026</a>
+					<a href="/tournaments" class="navbar-year">Tournaments</a>
 				{% endif %}
 			</div>
 			<div id="navbar-links">

@@ -9,6 +9,7 @@ from views.admin.admin import admin
 from views.api import api
 from views.views import views
 
+from tournament.routes import tournament_bp
 
 def setup_app():
 	app = Flask(__name__)
@@ -33,7 +34,7 @@ app = setup_app()
 app.register_blueprint(views)
 app.register_blueprint(api)
 app.register_blueprint(admin)
-
+app.register_blueprint(tournament_bp)
 
 @login_manager.user_loader
 def load_user(user_id):

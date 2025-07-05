@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+	<a class="back" href="/">&larr; Back to home</a>
+    {% for tournament in tournaments %}
+        <div class="contest">
+            <h2>{{ tournament.name }}</h2>
+            <p><strong>Game:</strong> <a href="/games/{{ tournament.game.id }}">{{ tournament.game.name }}</a></p>
+            <p><strong>Start Time: </strong><span class="unix-timestamp">{{ tournament.start_date }}</span></p>
+            <p><strong>End Time: </strong><span class="unix-timestamp">{{ tournament.end_date }}</span></p>
+
+            {% if tournament.start_date > current_time %}
+                <span class="contest-status">Starts in <span class="duration">{{ tournament.start_date - current_time }}</span></span><br>
+                {% if current_user.role.name == "admin" %}
+                    <span>As an administrator, you can <a href="/tournaments/{{ tournament.id }}">enter the tournament early</a></span>
+                {% elif current_user.role.name == "tester" %}
+                    <span>As an tester, you can <a href="/tournaments/{{ tournament.id }}">enter the tournament early.</a></span>
+                {% endif %}
+            {% elif tournament.end_date < current_time %}
+                <a class="contest-status" href="/tournaments/{{ tournament.id }}">Complete</a>
+            {% else %}
+                <a class="contest-status" href="/tournaments/{{ tournament.id }}">Enter (ends in <span class="duration">{{ tournament.end_date - current_time }}</span>)</a>
+            {% endif %}
+        </div>
+    {% endfor %}
+	
+
+{% endblock %}

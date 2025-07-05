@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+{% endblock %}
+
+{% block content %}
+    <br>
+    <h2>Bot Tournament Admin Panel</h2>
+
+    <form action="{{ url_for('tournament.submit_bot', tournament_id=tournament.id) }}" method="POST" enctype="multipart/form-data" class="form left-align">
+        <h2>Submit a Bot</h2>
+        <input type="text" name="bot_name" placeholder="Bot Name" required><br>
+        <input type="file" name="bot_file" accept=".py" required><br>
+        <input type="submit">
+    </form>
+
+    <form action="{{ url_for('tournament.delete_bot', tournament_id=tournament.id) }}" method="POST" class="form left-align">
+        <h2>Remove a Bot</h2>
+        <select name="bot_id" required>
+            {% for bot in bots %}
+                <option value="{{ bot.id }}">{{ bot.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="submit" value="Remove Bot" onclick="return confirm('Are you sure you want to remove this bot?')">
+    </form>
+
+    <form action="{{ url_for('tournament.run_round_robin', tournament_id=tournament.id) }}" method="POST" class="form left-align">
+        <h2>Run Round-Robin ({{ bots|length }} total)</h2>
+        <input type="submit" value="Run Round-Robin">
+    </form>
+
+    <form action="{{ url_for('tournament.run_swiss', tournament_id=tournament.id) }}" method="POST" class="form left-align">
+        <h2>Run Swiss + Finals ({{ bots|length }} total)</h2>
+        <label>Swiss Rounds:</label>
+        <input type="number" name="num_rounds" value="5" min="1" required><br>
+        <label>Finalists:</label>
+        <input type="number" name="top_k" value="4" min="2" required><br>
+        <input type="submit" value="Run Full Tournament">
+    </form>
+
+    <br>
+    <h2>Sample Bot Panel</h2>
+
+    <form action="{{ url_for('tournament.submit_sample_bot', tournament_id=tournament.id) }}" method="POST" enctype="multipart/form-data" class="form left-align">
+        <h2>Add a Sample Bot</h2>
+        <input type="text" name="bot_name" placeholder="Sample Bot Name" required><br>
+        <input type="file" name="bot_file" accept=".py" required><br>
+        <input type="submit" value="Upload Sample Bot">
+    </form>
+
+    <form action="{{ url_for('tournament.delete_sample_bot', tournament_id=tournament.id) }}" method="POST" class="form left-align">
+        <h2>Remove a Sample Bot</h2>
+        <select name="bot_id" required>
+            {% for bot in sample_bots %}
+                <option value="{{ bot.id }}">{{ bot.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="submit" value="Remove Sample Bot" onclick="return confirm('Are you sure you want to remove this sample bot?')">
+    </form>
+{% endblock %}

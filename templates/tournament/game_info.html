@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+{% endblock %}
+
+{% block content %}
+    <a class="back" href="/tournaments">&larr; Back to tournaments</a>
+    <h2>GAMING!!</h2>
+
+    {{ game.description|safe }}
+
+{% endblock %}
