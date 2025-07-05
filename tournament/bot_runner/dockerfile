@@ -1,7 +1,0 @@
-FROM python:3.10-slim
-
-WORKDIR /bot
-
-COPY bot_runner/entrypoint.py /entrypoint.py
-
-ENTRYPOINT ["python3", "/entrypoint.py"]
