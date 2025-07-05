@@ -280,9 +280,7 @@ def submit_practice(problem):
 		.filter(Submission.timestamp > time() - 600, Submission.is_practice == True) \
 		.all()
 	
-	practice_limit = 100 if current_user.role.name in ["admin", "tester"] else 15
-
-	if len(recent_practice_submissions) >= practice_limit:
+	if len(recent_practice_submissions) >= 15:
 		return { "error": "Too many practice submissions", "ratelimit": "" }
 	
 	data = request.get_json()
