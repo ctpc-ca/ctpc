@@ -85,7 +85,7 @@ def round_robin(bots, verbose=False, *, initial, scoring, is_terminal, fetch_res
 
 
 # sandbox run, twice against all sample bots
-def sandbox_results(user_code, sample_bots, *, initial, scoring):
+def sandbox_results(user_code, sample_bots, *, initial, scoring, is_terminal, fetch_result, is_legal_move, make_move, move_types):
     start_time = time.time()
     matches = 0
     moves_total = 0
@@ -115,9 +115,8 @@ def sandbox_results(user_code, sample_bots, *, initial, scoring):
             bot2_name = bot_name if position == "User First" else "User"
 
             try:
-                mOutcome, mState, mMoves, mHistory = execute(
-                    p1_code, p2_code, bot1_name, bot2_name, initial, False
-                )
+                mOutcome, mState, mMoves, mHistory = execute(p1_code, p2_code, bot1_name, bot2_name, initial, False, is_terminal=is_terminal, fetch_result=fetch_result, is_legal_move=is_legal_move, make_move=make_move, move_types=move_types)
+
                 game_history[bot1_name][bot2_name] = mHistory
 
                 if (mOutcome == "1" and p1_code == user_code) or (mOutcome == "2" and p2_code == user_code):

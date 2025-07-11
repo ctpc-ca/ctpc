@@ -31,10 +31,6 @@ def view_tournament(tournament_id):
     user_stats = None
     formatted_history = None
     match_results = None
-    game_module = load_game_modules(tournament.game)
-    format = (game_module["formatter_code"]).format
-    initial = (game_module["utils_code"]).initial
-    scoring = (game_module["utils_code"]).scoring
 
     if request.method == "POST":
         action = request.form.get("action")
@@ -47,7 +43,30 @@ def view_tournament(tournament_id):
         bot_code = bot_file.read().decode("utf-8")
 
         if action == "sandbox":
-            result, sandbox_history, match_results = sandbox_results(bot_code, sample_bots, initial=initial, scoring=scoring)
+            game_module = load_game_modules(tournament.game)
+            utils = game_module["utils_code"]
+            gameplay = game_module["gameplay_code"]
+            termination = game_module["termination_code"]
+
+            initial = utils.initial
+            scoring = utils.scoring
+            is_terminal = termination.is_terminal
+            fetch_result = termination.fetch_result
+            is_legal_move = gameplay.is_legal_move
+            make_move = gameplay.make_move
+            move_types = utils.move_types
+
+            result, sandbox_history, match_results = sandbox_results(
+                bot_code, 
+                sample_bots, 
+                initial=initial, 
+                scoring=scoring, 
+                is_terminal=is_terminal,
+                fetch_result=fetch_result,
+                is_legal_move=is_legal_move,
+                make_move=make_move,
+                move_types=move_types)
+
             session["sandbox_result"] = result
             session["sandbox_history"] = sandbox_history
             session["match_results"] = match_results
