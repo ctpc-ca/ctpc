@@ -11,14 +11,13 @@ def execute(bot1_code, bot2_code, bot1_name, bot2_name, initial_state, verbose=F
     state = initial_state
     turn = 0
     history = [initial_state]
+    move_history = [[1, None]] # moves: [legal?, move]
 
     if verbose:
         print("." * 30)
 
     while not is_terminal(state, turn):
         turn += 1
-        if verbose:
-            print(f"EXECUTING TURN {turn}")
 
         current_bot = bot1 if turn % 2 == 1 else bot2
         bot_name = bot1_name if turn % 2 == 1 else bot2_name
@@ -29,25 +28,35 @@ def execute(bot1_code, bot2_code, bot1_name, bot2_name, initial_state, verbose=F
                 print(f"NEXT MOVE ({turn}) from {bot_name}:", move)
 
             if move is None or not isinstance(move, move_types):
-                print(f"[!] Invalid move or crash by {bot_name}.")
-                return auto_lose(turn), state, turn, history
+                print(f"[!] Invalid move or crash by {bot_name}: {move}")
+                history.append(None)
+                move_history.append([0, f"INCORRECT TYPE: {move}"])
+                return auto_lose(turn), state, turn, history, move_history
 
         except subprocess.TimeoutExpired:
             print(f"[!] {bot_name} timed out.")
-            return auto_lose(turn), state, turn, history
+            history.append(None)
+            move_history.append([0, "TIME LIMIT EXCEEDED"])
+            return auto_lose(turn), state, turn, history, move_history
 
         except Exception as e:
             print(f"[!] Exception from {bot_name}: {e}")
-            return auto_lose(turn), state, turn, history
+            history.append(None)
+            move_history.append([0, f"{e}"])
+            return auto_lose(turn), state, turn, history, move_history
 
         if not is_legal_move(state, move, 2 - turn%2):
-            print(f"[!] Illegal move by {bot_name}.")
-            return auto_lose(turn), state, turn, history
+            print(f"[!] Illegal move by {bot_name}: {move}")
+            history.append(None)
+            move_history.append([0, f"ILLEGAL MOVE: {move}"])
+            return auto_lose(turn), state, turn, history, move_history
 
         state = make_move(state, move, 2 - turn%2)
         history.append(state)
+        move_history.append([1, move])
 
     result = fetch_result(state)
+    print(result, bot1_name if turn % 2 == 1 else bot2_name)
     bot1.shutdown()
     bot2.shutdown()
 
@@ -55,8 +64,8 @@ def execute(bot1_code, bot2_code, bot1_name, bot2_name, initial_state, verbose=F
         print("." * 30)
 
     if result == 'D':
-        return '0', state, turn, history
+        return '0', state, turn, history, move_history
     elif (result == 'W' and turn % 2 == 1) or (result == 'L' and turn % 2 == 0):
-        return '1', state, turn, history
+        return '1', state, turn, history, move_history
     else:
-        return '2', state, turn, history
+        return '2', state, turn, history, move_history

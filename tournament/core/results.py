@@ -9,8 +9,10 @@ def round_robin(bots, verbose=False, *, initial, scoring, is_terminal, fetch_res
     start_time = time.time()
     matches = 0
     moves = 0
-    game_history = defaultdict(lambda: defaultdict(list))
+    state_histories = defaultdict(lambda: defaultdict(list))
+    move_histories = defaultdict(lambda: defaultdict(list))
     match_results = defaultdict(lambda: defaultdict(str))
+
 
     results = {
         bot.name: {'score': 0, 'win': [], 'draw': [], 'loss': []}
@@ -31,9 +33,20 @@ def round_robin(bots, verbose=False, *, initial, scoring, is_terminal, fetch_res
                 print("\n" + "=" * 30)
                 print(f"RUNNING MATCH {matches} of {total_matches}: {id1} vs {id2}")
 
-            mOutcome, mState, mMoves, mHistory = execute(bot1.code, bot2.code, id1, id2, initial, verbose=False, is_terminal=is_terminal, fetch_result=fetch_result, is_legal_move=is_legal_move, make_move=make_move, move_types=move_types)
+            mOutcome, mState, mMoves, sHistory, mHistory = execute(bot1.code,
+                                                         bot2.code,
+                                                         id1,
+                                                         id2,
+                                                         initial,
+                                                         verbose=False,
+                                                         is_terminal=is_terminal,
+                                                         fetch_result=fetch_result,
+                                                         is_legal_move=is_legal_move,
+                                                         make_move=make_move,
+                                                         move_types=move_types)
             moves += mMoves
-            game_history[id1][id2] = mHistory
+            state_histories[id1][id2] = sHistory
+            move_histories[id1][id2] = mHistory
 
             if mOutcome == '1':
                 results[id1]['win'].append(f"{id2} [2]")
@@ -81,7 +94,7 @@ def round_robin(bots, verbose=False, *, initial, scoring, is_terminal, fetch_res
     print(f"{end_time - start_time:.2f}s spent in total")
     print("*" * 30)
 
-    return dict(sorted(results.items(), key=lambda item: item[1]['score'], reverse=True)), game_history,match_results
+    return dict(sorted(results.items(), key=lambda item: item[1]['score'], reverse=True)), state_histories, move_histories, match_results
 
 
 # sandbox run, twice against all sample bots
@@ -90,8 +103,9 @@ def sandbox_results(user_code, sample_bots, *, initial, scoring, is_terminal, fe
     matches = 0
     moves_total = 0
 
-    game_history = defaultdict(lambda: defaultdict(list)) # states of each turn of each game
-    match_results = defaultdict(lambda: defaultdict(str)) # results of each game
+    state_histories = defaultdict(lambda: defaultdict(list))
+    move_histories = defaultdict(lambda: defaultdict(list))
+    match_results = defaultdict(lambda: defaultdict(str))
 
     results = {}
 
@@ -111,13 +125,24 @@ def sandbox_results(user_code, sample_bots, *, initial, scoring, is_terminal, fe
         ]):
             matches += 1
 
-            bot1_name = "User" if position == "User First" else bot_name
-            bot2_name = bot_name if position == "User First" else "User"
+            id1 = "User" if position == "User First" else bot_name
+            id2 = bot_name if position == "User First" else "User"
 
             try:
-                mOutcome, mState, mMoves, mHistory = execute(p1_code, p2_code, bot1_name, bot2_name, initial, False, is_terminal=is_terminal, fetch_result=fetch_result, is_legal_move=is_legal_move, make_move=make_move, move_types=move_types)
+                mOutcome, mState, mMoves, sHistory, mHistory = execute(p1_code,
+                                                                       p2_code,
+                                                                       id1,
+                                                                       id2,
+                                                                       initial,
+                                                                       True,
+                                                                       is_terminal=is_terminal,
+                                                                       fetch_result=fetch_result,
+                                                                       is_legal_move=is_legal_move,
+                                                                       make_move=make_move,
+                                                                       move_types=move_types)
 
-                game_history[bot1_name][bot2_name] = mHistory
+                state_histories[id1][id2] = sHistory
+                move_histories[id1][id2] = mHistory
 
                 if (mOutcome == "1" and p1_code == user_code) or (mOutcome == "2" and p2_code == user_code):
                     results[bot_name]["wins"] += 1
@@ -134,12 +159,12 @@ def sandbox_results(user_code, sample_bots, *, initial, scoring, is_terminal, fe
 
                 results[bot_name]["score"] += score
                 results[bot_name]["details"].append(result_text)
-                match_results[bot1_name][bot2_name] = result_text
+                match_results[id1][id2] = result_text
 
             except Exception as e:
                 error_msg = f"Error ({position}): {e}"
                 results[bot_name]["details"].append(error_msg)
-                match_results[bot1_name][bot2_name] = error_msg
+                match_results[id1][id2] = error_msg
 
             subprocess.run(
                 "docker ps -aq --filter ancestor=bot-runner | xargs -r docker rm -f",
@@ -158,4 +183,4 @@ def sandbox_results(user_code, sample_bots, *, initial, scoring, is_terminal, fe
     print(f"{end_time - start_time:.2f}s spent in total")
     print("*" * 30)
 
-    return dict(sorted(results.items(), key=lambda item: item[1]["score"], reverse=True)), game_history, match_results
+    return dict(sorted(results.items(), key=lambda item: item[1]["score"], reverse=True)), state_histories, move_histories, match_results

@@ -16,7 +16,8 @@ def run_swiss_tournament(bots, num_rounds, top_k, verbose=False, *, initial, sco
         } for bot in bots
     }
     pairing_history = defaultdict(lambda: defaultdict(float))
-    game_history = defaultdict(lambda: defaultdict(list))
+    state_histories = defaultdict(lambda: defaultdict(list))
+    move_histories = defaultdict(lambda: defaultdict(list))
     side_counts = defaultdict(lambda: {"first": 0, "second": 0})
     up_down_tracker = defaultdict(bool)
     pairings_log = []
@@ -51,10 +52,21 @@ def run_swiss_tournament(bots, num_rounds, top_k, verbose=False, *, initial, sco
                     b2 = group[j]
                     if b2 not in used and b2 not in pairing_history[b1]:
                         starter, responder = pick_turn_order(b1, b2, side_counts)
-                        mOutcome, mState, mMoves, mHistory = execute(bot_list[starter].code, bot_list[responder].code, starter, responder, initial_state=initial, verbose=False, is_terminal=is_terminal, fetch_result=fetch_result, is_legal_move=is_legal_move, make_move=make_move, move_types=move_types)
+                        mOutcome, mState, mMoves, sHistory, mHistory = execute(bot_list[starter].code,
+                                                                               bot_list[responder].code,
+                                                                               starter,
+                                                                               responder,
+                                                                               initial_state=initial,
+                                                                               verbose=False,
+                                                                               is_terminal=is_terminal,
+                                                                               fetch_result=fetch_result,
+                                                                               is_legal_move=is_legal_move,
+                                                                               make_move=make_move,
+                                                                               move_types=move_types)
                         result = mOutcome
                         moves += mMoves
-                        game_history[starter][responder] = mHistory
+                        state_histories[starter][responder] = sHistory
+                        move_histories[starter][responder] = mHistory
 
                         update_scores_and_history(result, starter, responder, scores, scoring, pairing_history, side_counts)
                         round_pairs.append((starter, responder, result))
@@ -71,10 +83,21 @@ def run_swiss_tournament(bots, num_rounds, top_k, verbose=False, *, initial, sco
                         for b2 in score_groups[alt_score]:
                             if b2 not in used and b2 not in pairing_history[b1]:
                                 starter, responder = pick_turn_order(b1, b2, side_counts)
-                                mOutcome, mState, mMoves, mHistory = execute(bot_list[starter].code, bot_list[responder].code, starter, responder, initial_state=initial, verbose=False, is_terminal=is_terminal, fetch_result=fetch_result, is_legal_move=is_legal_move, make_move=make_move, move_types=move_types)
+                                mOutcome, mState, mMoves, sHistory, mHistory = execute(bot_list[starter].code,
+                                                                                       bot_list[responder].code,
+                                                                                       starter,
+                                                                                       responder,
+                                                                                       initial_state=initial,
+                                                                                       verbose=False,
+                                                                                       is_terminal=is_terminal,
+                                                                                       fetch_result=fetch_result,
+                                                                                       is_legal_move=is_legal_move,
+                                                                                       make_move=make_move,
+                                                                                       move_types=move_types)
                                 result = mOutcome
                                 moves += mMoves
-                                game_history[starter][responder] = mHistory
+                                state_histories[starter][responder] = sHistory
+                                move_histories[starter][responder] = mHistory
 
                                 update_scores_and_history(result, starter, responder, scores, scoring, pairing_history, side_counts)
                                 round_pairs.append((starter, responder, result))
@@ -92,7 +115,7 @@ def run_swiss_tournament(bots, num_rounds, top_k, verbose=False, *, initial, sco
                         for b2 in score_groups[alt_score]:
                             if b2 != b1 and b2 not in used:
                                 starter, responder = pick_turn_order(b1, b2, side_counts)
-                                mOutcome, mState, mMoves, mHistory = execute(
+                                mOutcome, mState, mMoves, sHistory, mHistory = execute(
                                     bot_list[starter].code,
                                     bot_list[responder].code,
                                     starter,
@@ -107,7 +130,8 @@ def run_swiss_tournament(bots, num_rounds, top_k, verbose=False, *, initial, sco
                                 )
                                 result = mOutcome
                                 moves += mMoves
-                                game_history[starter][responder] = mHistory
+                                state_histories[starter][responder] = sHistory
+                                move_histories[starter][responder] = mHistory
 
                                 update_scores_and_history(
                                     result, starter, responder,
@@ -142,7 +166,7 @@ def run_swiss_tournament(bots, num_rounds, top_k, verbose=False, *, initial, sco
     print("TOP BOTS", top_bots)
     print("SCORES", scores)
     
-    return top_bots, scores, pairings_log, game_history
+    return top_bots, scores, pairings_log, state_histories, move_histories
 
 def pick_turn_order(bot1, bot2, side_counts):
     b1_firsts = side_counts[bot1]['first']

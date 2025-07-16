@@ -19,6 +19,13 @@
     </div>
 </form>
 
+<!--
+session["sandbox_result"] = result
+session["state_histories"] = state_histories
+session["move_histories"] = move_histories
+session["match_results"] = match_results
+-->
+
 {% if results %}
     <h2>Sandbox Leaderboard</h2>
     <table class="form left-align" border="1" cellpadding="8">
@@ -53,9 +60,9 @@
         </tbody>
     </table>
     
-    {% if histories and match_results %}
+    {% if match_results and state_histories %}
     <h2>Game Histories</h2>
-        {% for starter, opponents in histories.items() %}
+        {% for starter, opponents in state_histories.items() %}
             {% for opponent, states in opponents.items() %}
                 <details style="margin-bottom: 12px;">
                     {% set result_text = match_results[starter][opponent] if starter in match_results and opponent in match_results[starter] else "N/A" %}
@@ -74,16 +81,25 @@
                         — <span class="{{ result_class }}">{{ result_text }}</span>
                     </summary>
                     <pre style="white-space: pre-wrap; background-color: #222; padding: 10px; color: #ddd; border-radius: 5px;">
-                {% for state in states %}
-                {% if loop.first %}
---- Initial ---
-                {% else %}
---- Turn {{ loop.index0 }} ({{ starter if loop.index0 % 2 == 1 else opponent }}) ---
-                {% endif %}
+                        {% set moves = move_histories[starter][opponent] if starter in move_histories and opponent in move_histories[starter] else [] %}
+
+                        {% for state in states %}
+                            {% if loop.first %}
+--- Initial State ---
 {{ state }}
-                {% endfor %}
+                            {% else %}
+--- Turn {{ loop.index0 }} ({{ starter if loop.index0 % 2 == 1 else opponent }}): ---
+Move: {{
+    ("ERROR: " ~ moves[loop.index0][1]) if moves[loop.index0][0] == 0
+    else moves[loop.index0][1]
+    if loop.index0 - 1 < moves|length else "?"
+}}
+State:
+{{ state }}
+                            {% endif %}
+                        {% endfor %}
 === {{ result_text }} ===
-                    </pre>
+                </pre>
                 </details>
             {% endfor %}
         {% endfor %}

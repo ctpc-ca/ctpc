@@ -26,11 +26,12 @@ def view_tournament(tournament_id):
     tournament = Tournament.query.get_or_404(tournament_id)
     sample_bots = SampleBot.query.all()
     sandbox_result = None
-    sandbox_history = None
+    state_histories = None
     success_message = None
     user_stats = None
     formatted_history = None
     match_results = None
+    format_state = None
 
     if request.method == "POST":
         action = request.form.get("action")
@@ -44,6 +45,7 @@ def view_tournament(tournament_id):
 
         if action == "sandbox":
             game_module = load_game_modules(tournament.game)
+            print(game_module)
             utils = game_module["utils_code"]
             gameplay = game_module["gameplay_code"]
             termination = game_module["termination_code"]
@@ -56,7 +58,7 @@ def view_tournament(tournament_id):
             make_move = gameplay.make_move
             move_types = utils.move_types
 
-            result, sandbox_history, match_results = sandbox_results(
+            result, state_histories, move_histories, match_results = sandbox_results(
                 bot_code, 
                 sample_bots, 
                 initial=initial, 
@@ -68,7 +70,8 @@ def view_tournament(tournament_id):
                 move_types=move_types)
 
             session["sandbox_result"] = result
-            session["sandbox_history"] = sandbox_history
+            session["state_histories"] = state_histories
+            session["move_histories"] = move_histories
             session["match_results"] = match_results
 
             session["user_stats"] = {
@@ -92,24 +95,30 @@ def view_tournament(tournament_id):
             return redirect(url_for("tournament.view_tournament", tournament_id=tournament_id))
 
     sandbox_result = session.pop("sandbox_result", None)
-    sandbox_history = session.pop("sandbox_history", None)
+    state_histories = session.pop("state_histories", None)
+    move_histories = session.pop("move_histories", None)
     user_stats = session.pop("user_stats", None)
     match_results = session.pop("match_results", {})
 
-    if sandbox_history:
+    if state_histories:
+        game_module = load_game_modules(tournament.game)
+        formatter = game_module["formatter_code"]
+        format_state = formatter.format
+        print("FORMAT STATE!!", format_state)
         formatted_history = {
             bot1: {
-                bot2: [format(state) for state in history]
+                bot2: [format_state(state) if format_state else state for state in history]
                 for bot2, history in opponents.items()
             }
-            for bot1, opponents in sandbox_history.items()
+            for bot1, opponents in state_histories.items()
         }
 
     return render_template("tournament/user_dashboard.html",
         tournament=tournament,
         sample_bots=sample_bots,
         results=sandbox_result,
-        histories=formatted_history,
+        state_histories=formatted_history,
+        move_histories=move_histories,
         success=success_message,
         user_stats=user_stats,
         match_results=match_results)
@@ -186,7 +195,7 @@ def run_round_robin(tournament_id):
     make_move = gameplay.make_move
     move_types = utils.move_types
 
-    results, game_history, match_results = round_robin(
+    results, state_histories, move_histories, match_results = round_robin(
         bots=bots,
         verbose=False,
         initial=initial,
@@ -198,7 +207,13 @@ def run_round_robin(tournament_id):
         move_types=move_types
     )
 
-    return render_template("tournament/leaderboard.html", results=results, game_history=game_history, match_results=match_results, scores=None, swiss_log=None)
+    return render_template("tournament/leaderboard.html",
+                           results=results,
+                           state_histories=state_histories,
+                           move_histories=move_histories,
+                           match_results=match_results,
+                           scores=None,
+                           swiss_log=None)
 
 @tournament_bp.route("/tournaments/<int:tournament_id>/run_swiss", methods=["POST"])
 @admin_required
@@ -226,7 +241,7 @@ def run_swiss(tournament_id):
     make_move = gameplay.make_move
     move_types = utils.move_types
 
-    top_bots, swiss_scores, pairings_log, swiss_history = run_swiss_tournament(
+    top_bots, swiss_scores, pairings_log, state_histories, move_histories = run_swiss_tournament(
         bots=bots,
         num_rounds=num_rounds,
         top_k=top_k,
@@ -265,7 +280,9 @@ def run_swiss(tournament_id):
         match_results=match_results,
         swiss_log=pairings_log,
         scores=sorted_scores,
-        qualified=top_k
+        qualified=top_k,
+        state_histories=state_histories,
+        move_histories=move_histories
     )
 
 @tournament_bp.route("/tournaments/<int:tournament_id>/submit_sample_bot", methods=["POST"])
