@@ -24,7 +24,7 @@ def view_tournaments():
 @login_required
 def view_tournament(tournament_id):
     tournament = Tournament.query.get_or_404(tournament_id)
-    sample_bots = SampleBot.query.all()
+    sample_bots = SampleBot.query.filter_by(tournament_id=tournament.id).all()
     sandbox_result = None
     state_histories = None
     success_message = None
@@ -45,7 +45,6 @@ def view_tournament(tournament_id):
 
         if action == "sandbox":
             game_module = load_game_modules(tournament.game)
-            print(game_module)
             utils = game_module["utils_code"]
             gameplay = game_module["gameplay_code"]
             termination = game_module["termination_code"]
@@ -104,7 +103,6 @@ def view_tournament(tournament_id):
         game_module = load_game_modules(tournament.game)
         formatter = game_module["formatter_code"]
         format_state = formatter.format
-        print("FORMAT STATE!!", format_state)
         formatted_history = {
             bot1: {
                 bot2: [format_state(state) if format_state else state for state in history]

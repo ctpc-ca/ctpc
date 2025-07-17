@@ -208,8 +208,8 @@ def update_scores_and_history(result, starter, responder, scores, scoring, histo
     side_counts[responder]['second'] += 1
 
 def get_sb(scores, history):
-    print("SCORES", scores)
-    print("HISTORY", history)
+    # print("SCORES", scores)
+    # print("HISTORY", history)
     for bot in history:
         for opponent in history[bot]:
             scores[bot]["sb"] += history[bot][opponent] * scores[opponent]["score"]
