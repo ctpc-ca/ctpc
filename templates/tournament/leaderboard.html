@@ -35,9 +35,9 @@
     {% endfor %}
 </table><br>
 
-{% if game_history %}
+{% if state_histories %}
     <h2>Round Robin Matches</h2>
-    {% for starter, opponents in game_history.items() %}
+    {% for starter, opponents in state_histories.items() %}
         {% for opponent, states in opponents.items() %}
             <details style="margin-bottom: 12px;">
                 {% set result = match_results[starter][opponent] if match_results and starter in match_results and opponent in match_results[starter] else "N/A" %}
@@ -54,14 +54,22 @@
                     <span class="{{ result_class }}">{{ result }}</span>
                 </summary>
                 <pre style="white-space: pre-wrap; background-color: #222; padding: 10px; color: #ddd; border-radius: 5px;">
-{% for state in states %}
-{% if loop.first %}
---- Initial ---
-{% else %}
---- Turn {{ loop.index0 }} ({{ starter if loop.index0 % 2 == 1 else opponent }}) ---
-{% endif %}
+                        {% for state in states %}
+                            {% if loop.first %}
+--- Initial State ---
 {{ state }}
-{% endfor %}
+                            {% else %}
+--- Turn {{ loop.index0 }} ({{ starter if loop.index0 % 2 == 1 else opponent }}): ---
+Move: {{
+    ("ERROR: " ~ move_histories[starter][opponent][loop.index0][1])
+        if move_histories[starter][opponent][loop.index0][0] == 0
+        else move_histories[starter][opponent][loop.index0][1]
+        if loop.index0 - 1 < move_histories[starter][opponent]|length else "?"
+}}
+State:
+{{ state }}
+                            {% endif %}
+                        {% endfor %}
 === {{ result }} ===
                 </pre>
             </details>

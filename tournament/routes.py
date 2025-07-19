@@ -254,7 +254,7 @@ def run_swiss(tournament_id):
     )
 
     top_subset = [bot_dict[name] for name in top_bots]
-    final_results, rr_history, match_results = round_robin(
+    final_results, state_histories, move_histories, match_results = round_robin(
         bots=top_subset,
         verbose=False,
         initial=initial,
@@ -274,7 +274,6 @@ def run_swiss(tournament_id):
     return render_template(
         "tournament/leaderboard.html",
         results=final_results,
-        game_history=rr_history,
         match_results=match_results,
         swiss_log=pairings_log,
         scores=sorted_scores,

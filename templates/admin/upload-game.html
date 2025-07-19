@@ -1,6 +1,7 @@
 {% extends "admin/adminbase.html" %}
 
 {% block content %}
+<a class="back" href="/admin">&larr; Back</a>
 <h2>Upload New Game</h2>
 
 <form method="POST">
@@ -25,16 +26,4 @@
     <button type="submit" name="action" value="upload">Upload Game</button>
 </form>
 
-<h2>Delete Existing Game</h2>
-
-<form method="POST">
-    <label>Select a game to delete:</label><br>
-    <select name="delete_game_id" required>
-        {% for game in games %}
-            <option value="{{ game.id }}">{{ game.name }}</option>
-        {% endfor %}
-    </select><br><br>
-
-    <button type="submit" name="action" value="delete">Delete Selected Game</button>
-</form>
 {% endblock %}
