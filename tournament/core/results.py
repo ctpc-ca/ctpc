@@ -144,7 +144,7 @@ def sandbox_results(user_code, sample_bots, *, initial, scoring, is_terminal, fe
                 state_histories[id1][id2] = sHistory
                 move_histories[id1][id2] = mHistory
 
-                if (mOutcome == "1" and p1_code == user_code) or (mOutcome == "2" and p2_code == user_code):
+                if (mOutcome == "1" and id1 == "User") or (mOutcome == "2" and id1 != "User"):
                     results[bot_name]["wins"] += 1
                     result_text = "User won"
                     score = scoring["win"]
