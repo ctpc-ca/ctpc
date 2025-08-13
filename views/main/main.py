@@ -20,7 +20,8 @@ def can_access_contest(contest, submit=False):
 		and (not submit or time() < contest.end_date):
 		return True
 
-	if (current_user.school.synchronous or (current_user.team and current_user.team.in_person)) \
+	if ((current_user.school and current_user.school.synchronous) or \
+		(current_user.team and current_user.team.in_person)) \
 		and time() > contest.start_date and (not submit or time() < contest.end_date):
 		return True
 	
@@ -439,22 +440,25 @@ def register(competition):
 	return render_template("register.html", competition=competition)
 
 
-@main.route("/competitions/<competition_id>/register/student", methods=["GET", "POST"])
-@check_object_exists(Competition, "/competitions", key_name="short_name")
+@main.route("/register-individual", methods=["GET", "POST"])
 @logout_required
-def register_as_student(competition):
+def register_as_student():
 	if request.method == "GET":
-		return redirect("/")
-		# return render_template("register-as-student.html", competition=competition)
+		return render_template("register-as-student.html")
 	
+	first = request.form.get("first")
+	last = request.form.get("last")
 	password = request.form.get("password")
 	email = request.form.get("email")
 
-	register_teacher_or_student(
-		"", "", password, email,
-		competition, "individual-student", "register-as-student.html"
+	user = register_teacher_or_student(
+		first, last, password, email,
+		None, "individual-student", "register-as-student.html"
 	)
-	return redirect(f"/competitions/{competition.short_name}")
+	if type(user) == str:
+		return user
+	
+	return redirect("/")
 
 
 @main.route("/competitions/<competition_id>/register/teacher", methods=["GET", "POST"])
