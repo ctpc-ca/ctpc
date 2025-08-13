@@ -16,7 +16,13 @@
 	<body>
 		<div id="navbar">
 			<div>
-				<span id="navbar-name-big"><a href="/">Canadian Team Programming Competition</a></span> <span id="navbar-name-small"><a href="/">CTPC</a></span> <a href="/competitions/2025" id="navbar-year">2025</a>
+				<span id="navbar-name-big"><a href="/">Canadian Team Programming Competition</a></span>
+				<span id="navbar-name-small"><a href="/">CTPC</a></span>
+				<a href="/competitions/2025" class="navbar-year">2025</a>
+				{% if current_user.is_authenticated and (current_user.role.name == "tester" or current_user.role.name == "admin") %}
+					<a href="/competitions/2026" class="navbar-year">2026</a>
+					<a href="/tournaments" class="navbar-year">Tournaments</a>
+				{% endif %}
 			</div>
 			<div id="navbar-links">
 				{% if current_user.is_authenticated %}

@@ -321,3 +321,68 @@ class ProblemTopic(db.Model):
 
 	def __repr__(self):
 		return f"<ProblemTopic {self.id}>"
+	
+class BotSubmission(db.Model):
+	__tablename__ = "bot_submissions"
+
+	id = sa.Column(sa.Integer, primary_key=True)
+	user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id"), nullable=True)
+	user = db.relationship("User", backref="bot_submissions")
+
+	name = sa.Column(sa.String(120), nullable=False)
+	code = sa.Column(sa.Text, nullable=False)
+
+	tournament_id = sa.Column(sa.Integer, sa.ForeignKey("tournaments.id"))
+	tournament = db.relationship("Tournament", backref="bot_submissions")
+
+
+class SampleBot(db.Model):
+	__tablename__ = "sample_bots"
+
+	id = sa.Column(sa.Integer, primary_key=True)
+	user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id"), nullable=True)
+	user = db.relationship("User", backref="sample_bots")
+	
+	name = sa.Column(sa.String(120), nullable=False)
+	code = sa.Column(sa.Text, nullable=False)
+
+	tournament_id = sa.Column(sa.Integer, sa.ForeignKey("tournaments.id"))
+	tournament = db.relationship("Tournament", backref="sample_bots")
+
+
+class Game(db.Model):
+	__tablename__ = "games"
+
+	id = sa.Column(sa.Integer, primary_key=True)
+	name = sa.Column(sa.Text, nullable=False)
+	formatter_code = sa.Column(sa.Text, nullable=False)
+	gameplay_code = sa.Column(sa.Text, nullable=False)
+	termination_code = sa.Column(sa.Text, nullable=False)
+	utils_code = sa.Column(sa.Text, nullable=False)
+
+	description = sa.Column(sa.Text)
+	examples = db.relationship("GameExample", backref="games", lazy=True)
+
+class GameExample(db.Model):
+	__tablename__ = "game_examples"
+
+	id = sa.Column(sa.Integer, primary_key=True)
+	game_id = sa.Column(sa.Integer, sa.ForeignKey("games.id"), nullable=False)
+	example_text = sa.Column(sa.Text, nullable=True)
+
+class Tournament(db.Model):
+
+	__tablename__ = "tournaments"
+
+	id = sa.Column(sa.Integer, primary_key=True)
+	name = sa.Column(sa.String(100), nullable=False, unique=True)
+
+	game_id = sa.Column(sa.Integer, sa.ForeignKey("games.id"), nullable=False)
+	game = db.relationship("Game", backref="tournaments")
+
+	start_date = sa.Column(sa.Integer, nullable=False)
+	end_date = sa.Column(sa.Integer, nullable=False)
+
+	def __repr__(self):
+		return f"<Tournament {self.name}>"
+

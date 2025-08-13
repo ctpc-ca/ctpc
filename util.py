@@ -24,6 +24,12 @@ def to_unix_timestamp(timestamp):
 		return int(dt.timestamp())
 	except:
 		return None
+	
+
+def timestamp_to_local(timestamp):
+    if not timestamp:
+        return ""
+    return datetime.fromtimestamp(timestamp).isoformat(timespec="minutes")
 
 
 def admin_required(func):

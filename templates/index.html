@@ -61,6 +61,12 @@
 						<div>
 							<img src="/static/images/homepage/ctpclogo.png" id="logo">
 							<a href="/competitions/2025">2025</a>
+							{% if current_user.is_authenticated and (current_user.role.name == "tester" or current_user.role.name == "admin") %}
+							<a href="/competitions/2026" class="navbar-year">2026</a>
+							{% endif %}
+							{% if current_user.is_authenticated %}
+							<a href="/tournaments" class="navbar-year">Tournaments</a>
+							{% endif %}
 						</div>
 						<div>
 							{% if current_user.is_authenticated %}
@@ -86,27 +92,25 @@
 						<h1>About the competition</h1>
 						<p>The Canadian Team Programming Competition is an event designed to challenge and showcase participants' skills in data structures and algorithms through both individual and team-based problem-solving. The contest features a variety of coding challenges that span diverse topics and difficulty levels, ensuring accessibility and engagement for participants of all experience levels.</p>
 						<p>Participants can choose to compete virtually or attend the in-person event, which offers additional perks such as inspiring guest speakers and networking opportunities. The contest is completely free to enter, and top-performing teams will receive prizes in recognition of their achievements.</p>
-						<p>Our 2025 event will take place on April 10, with the in-person event located at the University of Waterloo's South Campus Hall.</p>
+						<p>Our 2025 event was completed on April 10 at the University of Waterloo. Thanks to all that attended both in-person and virtually!</p>
 					</div>
 					<div id="numbers" class="section">
 						<div class="numbers-section" id="ns1">
-							<div class="numbers-section-header">344</div>
-							<div class="numbers-section-text">Students participated in the 2023 contest</div>
+							<div class="numbers-section-header">336</div>
+							<div class="numbers-section-text">Students participated in the 2025 contest</div>
 						</div>
 						<div class="numbers-section" id="ns2">
-							<div class="numbers-section-header">90</div>
-							<div class="numbers-section-text">Teams took part in the 2023 contest</div>
+							<div class="numbers-section-header">88</div>
+							<div class="numbers-section-text">Teams took part in the 2025 contest</div>
 						</div>
 						<div class="numbers-section" id="ns3">
-							<div class="numbers-section-header">28</div>
-							<div class="numbers-section-text">Schools across Ontario participated in the 2023 contest</div>
+							<div class="numbers-section-header">48</div>
+							<div class="numbers-section-text">Schools across Canada participated in the 2025 contest</div>
 						</div>
 					</div>
 					<div id="register" class="section">
 						<h1>Register</h1>
-						<p>Registration for the 2025 competition <b>is now open</b>. Teachers who have received a school code can register <a href="/competitions/2025/register/teacher">here</a>. If you have not received a school code and would like to participate, please email <a href="mailto:launch@ctpc.ca">launch@ctpc.ca</a>.</p>
-						<p>If you are a high school teacher, you can register as many students as you would like for the official competition through our website. All students in the official competition will participate on the same day, and will be eligible for prizes.</p>
-						<p>Any students who wish to participate individually can do so at a time of their choosing after the official contest has ended. However, they will not be eligible for prizes or leaderboards. Registration for individual students will open shortly.</p>
+						<p>Registration for the 2025 competition <b>is now closed</b>. Stay tuned for registration for our future events!</p>
 					</div>
 					<div id="bottom-content">
 						<div id="bottom-content-width">
@@ -178,7 +182,6 @@
 									</div>
 								</div>
 							</div>
-						</div>
 						<div id="contact">
 							<h1>Contact us</h1>
 							<span><a href="mailto:launch@ctpc.ca">launch@ctpc.ca</a>&nbsp;&nbsp;&bull;&nbsp;&nbsp;<a href="https://instagram.com/ctpc.ca">Instagram</a></span>

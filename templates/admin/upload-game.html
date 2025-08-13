@@ -1,0 +1,29 @@
+{% extends "admin/adminbase.html" %}
+
+{% block content %}
+<a class="back" href="/admin">&larr; Back</a>
+<h2>Upload New Game</h2>
+
+<form method="POST">
+    <label>Game Name:</label><br>
+    <input type="text" name="name" required><br><br>
+
+    <label>Formatter Code:</label><br>
+    <textarea name="formatter_code" rows="10" cols="80" required></textarea><br><br>
+
+    <label>Gameplay Code:</label><br>
+    <textarea name="gameplay_code" rows="10" cols="80" required></textarea><br><br>
+
+    <label>Termination Code:</label><br>
+    <textarea name="termination_code" rows="10" cols="80" required></textarea><br><br>
+
+    <label>Utils Code:</label><br>
+    <textarea name="utils_code" rows="10" cols="80" required></textarea><br><br>
+
+    <label>Game Description:</label><br>
+    <textarea name="description" rows="10" cols="80" required></textarea><br><br>
+
+    <button type="submit" name="action" value="upload">Upload Game</button>
+</form>
+
+{% endblock %}

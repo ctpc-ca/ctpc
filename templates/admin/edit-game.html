@@ -1,0 +1,48 @@
+{% extends "admin/adminbase.html" %}
+{% block content %}
+<a class="back" href="/admin">&larr; Back</a>
+<h2>Edit Existing Game</h2>
+
+<!-- Separate form just for game selection -->
+<form method="POST" action="{{ url_for('admin.manage.edit_game') }}" id="select-form">
+    <label>Select a game:</label><br>
+    <select name="selected_game_id" id="game-selector" required onchange="this.form.submit()">
+        <option value="">-- Choose a game --</option>
+        {% for game in games %}
+            <option value="{{ game.id }}" {% if selected_game and selected_game.id == game.id %}selected{% endif %}>
+                {{ game.name }}
+            </option>
+        {% endfor %}
+    </select>
+</form>
+
+<br>
+
+<!-- Only show the edit form when a game is selected -->
+{% if selected_game %}
+<form method="POST" action="{{ url_for('admin.manage.edit_game') }}" id="edit-form">
+    <!-- Hidden input to keep selected game id -->
+    <input type="hidden" name="selected_game_id" value="{{ selected_game.id }}">
+
+    <label>Game Name:</label><br>
+    <input type="text" name="name" id="name" value="{{ selected_game.name }}" required><br><br>
+
+    <label>Formatter Code:</label><br>
+    <textarea name="formatter_code" id="formatter_code" rows="10" cols="80" required>{{ selected_game.formatter_code }}</textarea><br><br>
+
+    <label>Gameplay Code:</label><br>
+    <textarea name="gameplay_code" id="gameplay_code" rows="10" cols="80" required>{{ selected_game.gameplay_code }}</textarea><br><br>
+
+    <label>Termination Code:</label><br>
+    <textarea name="termination_code" id="termination_code" rows="10" cols="80" required>{{ selected_game.termination_code }}</textarea><br><br>
+
+    <label>Utils Code:</label><br>
+    <textarea name="utils_code" id="utils_code" rows="10" cols="80" required>{{ selected_game.utils_code }}</textarea><br><br>
+
+    <label>Description:</label><br>
+    <textarea name="description" id="description" rows="10" cols="80" required>{{ selected_game.description }}</textarea><br><br>
+
+    <button type="submit">Save Changes</button>
+</form>
+{% endif %}
+{% endblock %}

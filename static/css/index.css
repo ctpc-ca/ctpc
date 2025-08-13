@@ -84,7 +84,7 @@ a {
 	background: #1f2134;
 }
 
-#navbar-year {
+.navbar-year {
 	color: rgb(200, 200, 255);
 	padding-left: 10px;
 	text-decoration: none;
@@ -106,7 +106,7 @@ a {
 	padding-left: 15px;
 }
 
-#navbar a:not(#navbar-year) {
+#navbar a:not(.navbar-year) {
 	color: rgb(220, 220, 220) !important;
 	text-decoration: none !important;
 }

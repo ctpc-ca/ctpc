@@ -1,0 +1,16 @@
+{% extends "admin/adminbase.html" %}
+{% block content %}
+<a class="back" href="/admin">&larr; Back</a>
+<h2>Delete Game</h2>
+
+<form method="POST">
+    <label>Select a game to delete:</label><br>
+    <select name="delete_game_id" required>
+        {% for game in games %}
+            <option value="{{ game.id }}">{{ game.name }}</option>
+        {% endfor %}
+    </select><br><br>
+
+    <button type="submit" onclick="return confirm('Are you sure you want to delete this game?')">Delete Selected Game</button>
+</form>
+{% endblock %}

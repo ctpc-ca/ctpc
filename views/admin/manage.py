@@ -1,13 +1,18 @@
-from flask import Blueprint, render_template, request, redirect
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
 import time, json, requests
+import datetime
 
-from models import SubmissionStatus, User, School, SchoolBoard, UserRole, Submission, db
-from util import admin_required, generate_random_password, check_object_exists
+from models import SubmissionStatus, User, School, SchoolBoard, UserRole, Submission, Game, Tournament, db
+from util import admin_required, generate_random_password, check_object_exists, to_unix_timestamp, timestamp_to_local
 from setup import bcrypt
 import handle_objects
 
 manage = Blueprint("manage", __name__, template_folder="templates")
+
+@manage.record
+def setup_filters(state):
+    state.app.jinja_env.filters["timestamp_to_local"] = timestamp_to_local
 
 
 @manage.route("/admin/add-board", methods=["GET", "POST"])
@@ -285,3 +290,176 @@ def delete_submission(submission):
 	
 	handle_objects.delete_submission(submission)
 	return redirect("/admin/view-recent-submissions/900")
+
+# @manage.route("/admin/upload-game", methods=["GET", "POST"])
+# @admin_required
+# def upload_game():
+# 	if request.method == "POST":
+# 		action = request.form.get("action")
+
+# 		if action == "upload":
+# 			name = request.form.get("name")
+# 			formatter_code = request.form.get("formatter_code")
+# 			gameplay_code = request.form.get("gameplay_code")
+# 			termination_code = request.form.get("termination_code")
+# 			utils_code = request.form.get("utils_code")
+# 			description = request.form.get("description")
+
+# 			if name and gameplay_code and termination_code and utils_code:
+# 				new_game = Game(
+# 					name=name,
+# 					formatter_code=formatter_code,
+# 					gameplay_code=gameplay_code,
+# 					termination_code=termination_code,
+# 					utils_code=utils_code,
+# 					description=description
+# 				)
+# 				db.session.add(new_game)
+# 				db.session.commit()
+# 			else:
+# 				flash("All fields must be filled out.", "error")
+
+# 		elif action == "delete":
+# 			game_id = request.form.get("delete_game_id")
+# 			game = Game.query.get(game_id)
+# 			if game:
+# 				db.session.delete(game)
+# 				db.session.commit()
+
+# 	games = Game.query.all()
+# 	return render_template("admin/upload-game.html", games=games)
+
+@manage.route("/admin/upload-game", methods=["GET", "POST"])
+@admin_required
+def upload_game():
+	if request.method == "POST":
+		name = request.form.get("name")
+		formatter_code = request.form.get("formatter_code")
+		gameplay_code = request.form.get("gameplay_code")
+		termination_code = request.form.get("termination_code")
+		utils_code = request.form.get("utils_code")
+		description = request.form.get("description")
+
+		if name and gameplay_code and termination_code and utils_code:
+			new_game = Game(
+				name=name,
+				formatter_code=formatter_code,
+				gameplay_code=gameplay_code,
+				termination_code=termination_code,
+				utils_code=utils_code,
+				description=description
+			)
+			db.session.add(new_game)
+			db.session.commit()
+			flash("Game uploaded successfully!", "success")
+		else:
+			flash("All fields must be filled out.", "error")
+
+	return render_template("admin/upload-game.html")
+
+
+@manage.route("/admin/edit-game", methods=["GET", "POST"])
+@admin_required
+def edit_game():
+    games = Game.query.all()
+    selected_game = None
+
+    if request.method == "POST":
+        game_id = request.form.get("selected_game_id")
+
+        # Edit form submitted
+        if "name" in request.form:
+            game = Game.query.get_or_404(game_id)
+            game.name = request.form.get("name")
+            game.formatter_code = request.form.get("formatter_code")
+            game.gameplay_code = request.form.get("gameplay_code")
+            game.termination_code = request.form.get("termination_code")
+            game.utils_code = request.form.get("utils_code")
+            game.description = request.form.get("description")
+            db.session.commit()
+            flash("Game updated successfully!", "success")
+            return redirect(url_for("admin.manage.edit_game"))
+
+        # Just a game selection from the dropdown
+        elif game_id:
+            selected_game = Game.query.get(game_id)
+
+    return render_template("admin/edit-game.html", games=games, selected_game=selected_game)
+
+
+@manage.route("/admin/delete-game", methods=["GET", "POST"])
+@admin_required
+def delete_game():
+	if request.method == "POST":
+		game_id = request.form.get("delete_game_id")
+		game = Game.query.get(game_id)
+		if game:
+			db.session.delete(game)
+			db.session.commit()
+			flash("Game deleted successfully.", "success")
+		else:
+			flash("Game not found.", "error")
+
+	games = Game.query.all()
+	return render_template("admin/delete-game.html", games=games)
+
+
+@manage.route("/admin/tournaments")
+@admin_required
+def tournament_page():
+	tournaments = Tournament.query.all()
+	games = Game.query.all()
+
+	return render_template("admin/tournaments.html", tournaments=tournaments, games=games)
+
+
+@manage.route("/admin/add-tournament", methods=["GET", "POST"])
+@admin_required
+def add_tournament():
+	if request.method == "POST":
+		name = request.form.get("name")
+		game_id = request.form.get("game_id")
+
+		start_date = to_unix_timestamp(request.form["start_date"])
+		end_date = to_unix_timestamp(request.form["end_date"])
+
+		tournament = Tournament(
+			name=name,
+			game_id=game_id,
+			start_date=start_date,
+			end_date=end_date,
+		)
+
+		db.session.add(tournament)
+		db.session.commit()
+		return redirect(url_for("admin.manage.tournament_page"))
+
+	games = Game.query.all()
+	return render_template("admin/add-tournament.html", games=games)
+
+
+@manage.route("/admin/edit-tournament/<int:tournament_id>", methods=["GET", "POST"])
+@admin_required
+def edit_tournament(tournament_id):
+	tournament = Tournament.query.get_or_404(tournament_id)
+	games = Game.query.all()
+
+	if request.method == "POST":
+		tournament.name = request.form["name"]
+		tournament.game_id = request.form["game_id"]
+		tournament.start_date = to_unix_timestamp(request.form["start_date"])
+		tournament.end_date = to_unix_timestamp(request.form["end_date"])
+		db.session.commit()
+		return redirect(url_for("admin.manage.tournament_page"))
+
+	return render_template("admin/edit-tournament.html", tournament=tournament, games=games)
+
+
+@manage.route("/admin/delete-tournament/<int:tournament_id>")
+@admin_required
+def delete_tournament(tournament_id):
+	tournament = Tournament.query.get_or_404(tournament_id)
+	db.session.delete(tournament)
+	db.session.commit()
+	return redirect(url_for("admin.manage.tournament_page"))
+

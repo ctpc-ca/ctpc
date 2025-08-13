@@ -1,0 +1,30 @@
+{% extends "admin/adminbase.html" %}
+
+{% block content %}
+<a class="back" href="{{ url_for('admin.manage.tournament_page') }}">&larr; Back to tournaments</a>
+<h1>Edit Tournament: {{ tournament.name }}</h1>
+
+<form method="POST">
+    <label>Tournament Name:</label><br>
+    <input type="text" name="name" value="{{ tournament.name }}" required><br><br>
+
+    <label>Game:</label><br>
+    <select name="game_id" required>
+        {% for game in games %}
+            <option value="{{ game.id }}" {% if game.id == tournament.game_id %}selected{% endif %}>
+                {{ game.name }}
+            </option>
+        {% endfor %}
+    </select><br><br>
+
+    <label>Start Time</label><br>
+    <input type="datetime-local" name="start_date"
+           value="{{ tournament.start_date | timestamp_to_local }}"><br><br>
+
+    <label>End Time</label><br>
+    <input type="datetime-local" name="end_date"
+           value="{{ tournament.start_date | timestamp_to_local }}"><br><br>
+
+    <button type="submit">Save Changes</button>
+</form>
+{% endblock %}

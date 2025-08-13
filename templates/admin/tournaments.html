@@ -1,0 +1,33 @@
+{% extends "admin/adminbase.html" %}
+
+{% block content %}
+<a class="back" href="/admin">&larr; Back to admin</a>
+<h1>Tournaments</h1>
+
+<div class="admin-controls">
+    <a href="/admin/add-tournament">Add tournament</a>
+</div>
+
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Game</th>
+        <th>Start Time</th>
+        <th>End Time</th>
+        <th>Actions</th>
+    </tr>
+    {% for tournament in tournaments %}
+        <tr>
+            <td>{{ tournament.name }}</td>
+            <td>{{ tournament.game.name }}</td>
+            <td class="unix-timestamp">{{ tournament.start_date or "N/A" }}</td>
+            <td class="unix-timestamp">{{ tournament.end_date or "N/A" }}</td>
+            <td>
+                <a href="/admin/edit-tournament/{{ tournament.id }}">Edit</a> &bull;
+                <a href="/admin/delete-tournament/{{ tournament.id }}">Delete</a> &bull;
+                <a href="/tournament/{{ tournament.id }}/admin">Dashboard</a>
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+{% endblock %}

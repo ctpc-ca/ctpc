@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tournament.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>User Bot Portal</h1>
+
+<form method="POST" enctype="multipart/form-data" class="form left-align">
+    <h2>Upload and Test Your Bot</h2>
+    <input type="text" name="bot_name" placeholder="Bot Name" required><br>
+    <input type="file" name="bot_file" accept=".py" required><br><br>
+
+    <div class="button-row">
+        <button type="submit" name="action" value="sandbox">Run Against Sample Bots</button>
+        <button type="submit" name="action" value="submit">Submit Officially</button>
+    </div>
+</form>
+
+<!--
+session["sandbox_result"] = result
+session["state_histories"] = state_histories
+session["move_histories"] = move_histories
+session["match_results"] = match_results
+-->
+
+{% if results %}
+    <h2>Sandbox Leaderboard</h2>
+    <table class="form left-align" border="1" cellpadding="8">
+        <thead>
+            <tr>
+                <th>Sample Bot</th>
+                <th>Wins</th>
+                <th>Draws</th>
+                <th>Losses</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        {% if user_stats %}
+            <h3>Your Overall Performance</h3>
+            <ul>
+                <li><strong>Total Wins:</strong> {{ user_stats.wins }}</li>
+                <li><strong>Total Draws:</strong> {{ user_stats.draws }}</li>
+                <li><strong>Total Losses:</strong> {{ user_stats.losses }}</li>
+                <li><strong>Total Score:</strong> {{ user_stats.score }}</li>
+            </ul>
+        {% endif %}
+        <tbody>
+            {% for bot_name, data in results.items() %}
+            <tr>
+                <td>{{ bot_name }}</td>
+                <td>{{ data.wins }}</td>
+                <td>{{ data.draws }}</td>
+                <td>{{ data.losses }}</td>
+                <td>{{ data.score }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if match_results and state_histories %}
+    <h2>Game Histories</h2>
+        {% for starter, opponents in state_histories.items() %}
+            {% for opponent, states in opponents.items() %}
+                <details style="margin-bottom: 12px;">
+                    {% set result_text = match_results[starter][opponent] if starter in match_results and opponent in match_results[starter] else "N/A" %}
+                    {% if "won" in result_text %}
+                        {% set result_class = "match-win" %}
+                    {% elif "Draw" in result_text %}
+                        {% set result_class = "match-draw" %}
+                    {% elif "lost" in result_text %}
+                        {% set result_class = "match-loss" %}
+                    {% else %}
+                        {% set result_class = "" %}
+                    {% endif %}
+                    <summary>
+                        <strong>{{ starter }}</strong> vs <strong>{{ opponent }}</strong>
+                        ({{ states | length - 1 }} turns)
+                        — <span class="{{ result_class }}">{{ result_text }}</span>
+                    </summary>
+                    <pre style="white-space: pre-wrap; background-color: #222; padding: 10px; color: #ddd; border-radius: 5px;">
+                        {% set moves = move_histories[starter][opponent] if starter in move_histories and opponent in move_histories[starter] else [] %}
+
+                        {% for state in states %}
+                            {% if loop.first %}
+--- Initial State ---
+{{ state }}
+                            {% else %}
+--- Turn {{ loop.index0 }} ({{ starter if loop.index0 % 2 == 1 else opponent }}): ---
+Move: {{
+    ("ERROR: " ~ moves[loop.index0][1]) if moves[loop.index0][0] == 0
+    else moves[loop.index0][1]
+    if loop.index0 - 1 < moves|length else "?"
+}}
+State:
+{{ state }}
+                            {% endif %}
+                        {% endfor %}
+=== {{ result_text }} ===
+                </pre>
+                </details>
+            {% endfor %}
+        {% endfor %}
+    {% endif %}
+{% endif %}
+{% endblock %}
