@@ -134,7 +134,7 @@ def sandbox_results(user_code, sample_bots, *, initial, scoring, is_terminal, fe
                                                                        id1,
                                                                        id2,
                                                                        initial,
-                                                                       True,
+                                                                       False,
                                                                        is_terminal=is_terminal,
                                                                        fetch_result=fetch_result,
                                                                        is_legal_move=is_legal_move,
@@ -143,6 +143,8 @@ def sandbox_results(user_code, sample_bots, *, initial, scoring, is_terminal, fe
 
                 state_histories[id1][id2] = sHistory
                 move_histories[id1][id2] = mHistory
+
+                moves_total += mMoves
 
                 if (mOutcome == "1" and id1 == "User") or (mOutcome == "2" and id1 != "User"):
                     results[bot_name]["wins"] += 1

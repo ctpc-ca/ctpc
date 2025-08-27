@@ -1,9 +1,13 @@
 FROM python:3.10-slim
 
-WORKDIR /bot
+WORKDIR /app
 
-COPY . .
+# Copy the chess module from within the build context
+COPY chess /app/chess
 
-RUN pip install --no-cache-dir -r requirements.txt
+# Debug: dump hash of the file into image
+RUN sha256sum /app/chess/chess_utils.py
 
-CMD ["python3", "app.py"]
+ENV PYTHONPATH="/app"
+
+RUN echo "=== CHESS CONTENTS ===" && ls -R /app/chess

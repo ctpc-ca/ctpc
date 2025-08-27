@@ -16,7 +16,11 @@ def execute(bot1_code, bot2_code, bot1_name, bot2_name, initial_state, verbose=F
     if verbose:
         print("." * 30)
 
-    while not is_terminal(state, turn):
+    # print("executing...")
+
+    while True:
+        # print(f"moving... move {turn}")
+        # print("STATE:", state)
         turn += 1
 
         current_bot = bot1 if turn % 2 == 1 else bot2
@@ -24,6 +28,12 @@ def execute(bot1_code, bot2_code, bot1_name, bot2_name, initial_state, verbose=F
 
         try:
             move = current_bot.send_state(state, 2 - turn%2)
+
+            
+
+            # print("board", state["board"])
+            # print("movelist", state["movelist"])
+
             if verbose:
                 print(f"NEXT MOVE ({turn}) from {bot_name}:", move)
 
@@ -54,6 +64,10 @@ def execute(bot1_code, bot2_code, bot1_name, bot2_name, initial_state, verbose=F
         state = make_move(state, move, 2 - turn%2)
         history.append(state)
         move_history.append([1, move])
+
+        if is_terminal(state, turn) and "movelist" in state:
+            print("MOVE LIST:", state["movelist"])
+            break
 
     result = fetch_result(state)
     print(result, bot1_name if turn % 2 == 1 else bot2_name)

@@ -1,0 +1,17 @@
+# venv/
+# __pycache__/
+# *.pyc
+
+# *.swp
+# *.swo
+# *.bak
+# *.log
+
+# .git/
+# .gitignore
+# .DS_Store
+
+# *.sqlite3
+# *.db
+# *.env
+# instance/

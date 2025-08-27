@@ -2,6 +2,7 @@ import os
 
 from flask import Flask
 from flask_migrate import Migrate
+from flask_session import Session
 
 from models import User, db
 from setup import bcrypt, login_manager
@@ -20,6 +21,17 @@ def setup_app():
 
 	app.jinja_env.auto_reload = True
 	app.config["TEMPLATES_AUTO_RELOAD"] = True
+
+	app.config["SESSION_TYPE"] = "filesystem"
+	app.config["SESSION_PERMANENT"] = False
+
+	session_dir = os.path.join(os.getcwd(), ".flask_session")
+	if not os.path.exists(session_dir):
+		os.makedirs(session_dir)
+	
+	app.config["SESSION_FILE_DIR"] = session_dir
+
+	Session(app)
 
 	migrate = Migrate()
 

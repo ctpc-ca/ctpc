@@ -25,13 +25,14 @@ def view_tournaments():
 def view_tournament(tournament_id):
     tournament = Tournament.query.get_or_404(tournament_id)
     sample_bots = SampleBot.query.filter_by(tournament_id=tournament.id).all()
+
     sandbox_result = None
     state_histories = None
-    success_message = None
-    user_stats = None
-    formatted_history = None
+    move_histories = None
     match_results = None
-    format_state = None
+    formatted_history = None
+    user_stats = None
+    success_message = None
 
     if request.method == "POST":
         action = request.form.get("action")
@@ -57,69 +58,85 @@ def view_tournament(tournament_id):
             make_move = gameplay.make_move
             move_types = utils.move_types
 
-            result, state_histories, move_histories, match_results = sandbox_results(
-                bot_code, 
-                sample_bots, 
-                initial=initial, 
-                scoring=scoring, 
+            sandbox_result, state_histories, move_histories, match_results = sandbox_results(
+                bot_code,
+                sample_bots,
+                initial=initial,
+                scoring=scoring,
                 is_terminal=is_terminal,
                 fetch_result=fetch_result,
                 is_legal_move=is_legal_move,
                 make_move=make_move,
-                move_types=move_types)
+                move_types=move_types,
+            )
 
-            session["sandbox_result"] = result
-            session["state_histories"] = state_histories
-            session["move_histories"] = move_histories
-            session["match_results"] = match_results
-
-            session["user_stats"] = {
-                "wins": sum(bot["wins"] for bot in result.values()),
-                "draws": sum(bot["draws"] for bot in result.values()),
-                "losses": sum(bot["losses"] for bot in result.values()),
-                "score": sum(bot["score"] for bot in result.values()),
+            user_stats = {
+                "wins": sum(bot["wins"] for bot in sandbox_result.values()),
+                "draws": sum(bot["draws"] for bot in sandbox_result.values()),
+                "losses": sum(bot["losses"] for bot in sandbox_result.values()),
+                "score": sum(bot["score"] for bot in sandbox_result.values()),
             }
 
-            return redirect(url_for("tournament.view_tournament", tournament_id=tournament_id))
+            format_state = None
+            if state_histories:
+                formatter = game_module["formatter_code"]
+                format_state = formatter.format
+
+                formatted_history = {
+                    bot1: {
+                        bot2: [format_state(state) if format_state else state for state in history]
+                        for bot2, history in opponents.items()
+                    }
+                    for bot1, opponents in state_histories.items()
+                }
+
+            return render_template("tournament/user_dashboard.html",
+                tournament=tournament,
+                sample_bots=sample_bots,
+                results=sandbox_result,
+                state_histories=formatted_history,
+                move_histories=move_histories,
+                success=success_message,
+                user_stats=user_stats,
+                match_results=match_results)
 
         elif action == "submit":
             if current_user.role.name != "admin":
                 BotSubmission.query.filter_by(user_id=current_user.id).delete()
                 db.session.commit()
 
-            new_bot = BotSubmission(name=bot_name, code=bot_code, user_id=current_user.id, tournament_id=tournament_id)
+            new_bot = BotSubmission(
+                name=bot_name,
+                code=bot_code,
+                user_id=current_user.id,
+                tournament_id=tournament_id
+            )
             db.session.add(new_bot)
             db.session.commit()
             success_message = "Bot submitted successfully!"
-            return redirect(url_for("tournament.view_tournament", tournament_id=tournament_id))
 
-    sandbox_result = session.pop("sandbox_result", None)
-    state_histories = session.pop("state_histories", None)
-    move_histories = session.pop("move_histories", None)
-    user_stats = session.pop("user_stats", None)
-    match_results = session.pop("match_results", {})
+            # Now just render a fresh view with the message
+            return render_template("tournament/user_dashboard.html",
+                tournament=tournament,
+                sample_bots=sample_bots,
+                results=None,
+                state_histories=None,
+                move_histories=None,
+                success=success_message,
+                user_stats=None,
+                match_results=None)
 
-    if state_histories:
-        game_module = load_game_modules(tournament.game)
-        formatter = game_module["formatter_code"]
-        format_state = formatter.format
-        formatted_history = {
-            bot1: {
-                bot2: [format_state(state) if format_state else state for state in history]
-                for bot2, history in opponents.items()
-            }
-            for bot1, opponents in state_histories.items()
-        }
-
+    # GET request: just render the dashboard
     return render_template("tournament/user_dashboard.html",
         tournament=tournament,
         sample_bots=sample_bots,
-        results=sandbox_result,
-        state_histories=formatted_history,
-        move_histories=move_histories,
-        success=success_message,
-        user_stats=user_stats,
-        match_results=match_results)
+        results=None,
+        state_histories=None,
+        move_histories=None,
+        success=None,
+        user_stats=None,
+        match_results=None)
+
 
 @tournament_bp.route("/games/<int:game_id>")
 @login_required

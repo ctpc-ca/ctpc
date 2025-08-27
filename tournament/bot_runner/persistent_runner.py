@@ -1,18 +1,22 @@
 import subprocess
 import json
 import select
+import traceback
+import sys
 
 class PersistentDockerBot:
     def __init__(self, bot_code, container_name):
         self.container_name = container_name
         self.bot_code = bot_code
 
+        # Clean up any old container
         subprocess.run([
             "docker", "rm", "-f", self.container_name
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+        # This string becomes the "bot runner" program inside the container
         docker_program_code = "\n".join([
-            "import sys, json, types",
+            "import sys, json, types, traceback",
             "namespace = types.SimpleNamespace()",
             "code = []",
             "while True:",
@@ -27,7 +31,9 @@ class PersistentDockerBot:
             "        result = namespace.move(state, player)",
             "        print(json.dumps({ 'ok': result }), flush=True)",
             "    except Exception as e:",
-            "        print(json.dumps({ 'error': str(e) }), flush=True)"
+            "        error_msg = f\"{type(e).__name__}: {str(e)}\"",
+            "        tb = traceback.format_exc()",
+            "        print(json.dumps({ 'error': error_msg, 'traceback': tb }), flush=True)"
         ])
 
         self.proc = subprocess.Popen(
@@ -48,7 +54,9 @@ class PersistentDockerBot:
                 "--ulimit", "nproc=32:32",
                 "--device-read-bps", "/dev/null:1mb",
                 "--device-read-iops", "/dev/null:10",
-                "bot-runner", "python3", "-u", "-c", docker_program_code
+                "bot-runner",
+                "env", "PYTHONPATH=/app",
+                "python3", "-u", "-c", docker_program_code
             ],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -56,6 +64,7 @@ class PersistentDockerBot:
             text=True
         )
 
+        # Send bot code to container
         self.proc.stdin.write(self.bot_code + "\n__END__\n")
         self.proc.stdin.flush()
 
@@ -66,19 +75,44 @@ class PersistentDockerBot:
             self.proc.stdin.flush()
 
             if select.select([self.proc.stdout], [], [], 1)[0]:
-                output = self.proc.stdout.readline()
-                response = json.loads(output.strip())
+                output = self.proc.stdout.readline().strip()
+
+                if not output:
+                    print("[!] Empty output from bot.")
+                    self._print_stderr_lines()
+                    return None
+
+                try:
+                    response = json.loads(output)
+                except json.JSONDecodeError as e:
+                    print(f"[!] JSON decode error: {e}")
+                    print(f"[!] Bot stdout: {repr(output)}")
+                    self._print_stderr_lines()
+                    return None
+
                 if "error" in response:
                     print(f"[!] Bot error: {response['error']}")
+                    print(f"[!] Traceback: {response.get('traceback', '')}")
+                    self._print_stderr_lines()
                     return None
+
+                self._print_stderr_lines()
                 return response["ok"]
+
             else:
                 print(f"[!] Bot {self.container_name} timed out.")
+                self._print_stderr_lines()
                 return None
 
         except Exception as e:
-            print(f"[!] Exception in send_state: {e}")
-            return None
+            traceback.print_exc(file=sys.stderr)
+            print(json.dumps({'error': f"{type(e).__name__}: {str(e)}"}), flush=True)
+
+    def _print_stderr_lines(self):
+        while select.select([self.proc.stderr], [], [], 0)[0]:
+            err_line = self.proc.stderr.readline()
+            if err_line:
+                print(f"[stderr] {err_line.strip()}")
 
     def shutdown(self):
         self.proc.kill()

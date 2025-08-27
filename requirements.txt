@@ -3,5 +3,6 @@ flask
 flask_login
 flask_migrate
 flask_bcrypt
+flask_session
 markdown
 requests
