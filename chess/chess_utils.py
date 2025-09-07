@@ -21,7 +21,7 @@ initial = {
     "H1R": False,
     "H8R": False,
     "prev_move": None,
-    "history": [initial_board],
+    "history": [copy.deepcopy(initial_board)],
     "hdict": {"RNBQKBNRPPPPPPPP................................pppppppprnbqkbnr":1},
     "movelist": []
 }
@@ -65,6 +65,8 @@ def format_board(state):
             row += legend[board[i][j]]
         print(row)
 
+# format_board(initial)
+
 def format_attacked_squares(grid):
     for i in range(8):
         row = ""
@@ -72,7 +74,6 @@ def format_attacked_squares(grid):
             if grid[i][j]: row += '#'
             else: row += '.'
         print(row)
-
 
 
 def to_pgn_movelist(movelist):
@@ -97,7 +98,7 @@ def count_pieces(board):
 
     return 64 - empty_spaces
 
-def is_equal_pawns(p1, p2):
+def pawn_moved(p1, p2):
     for i in range(8):
         for j in range(8):
             s1, s2 = p1[i][j], p2[i][j]
@@ -105,7 +106,7 @@ def is_equal_pawns(p1, p2):
                 return True  # Pawn moved from this square
             if s2 in ('p', 'P') and s1 != s2:
                 return True  # Pawn moved to this square
-    return False  # No pawn moved
+    return False
 
 
 universal_attacks = {
@@ -181,7 +182,7 @@ def get_attacked_squares(state, player):
     board = state["board"]
     attacked_grid = [[0 for _ in range(8)] for _ in range(8)]
 
-    # print("ATTACK SCAN ON BOARD", board)
+    # print("attack scanning", board)
 
     for row in range(8):
         for col in range(8):
@@ -190,8 +191,8 @@ def get_attacked_squares(state, player):
                 continue
 
             if piece not in attack_patterns:
-                print(f"[!!!] Invalid piece in get_attacked_squares: {repr(piece)} at ({row}, {col})")
-                raise ValueError(f"Unexpected piece {piece} found on board!")
+                print(f"Invalid piece in get_attacked_squares: {repr(piece)} at ({row}, {col})")
+                raise ValueError(f"Unexpected piece {piece} found on board")
 
             pattern = attack_patterns[piece]
 
@@ -279,16 +280,16 @@ def get_en_passant_moves(state, player):
         return en_passant_moves
 
     # Determine en passant capture square and pawn rank based on player
-    if player == 1:  # white (p), capturing black (P) on rank 5 (row 3)
+    if player == 1:  # White (p) capturing black (P) on rank 5 (row 3)
         capture_row = end_row - 1
         pawn_row = 3
         pawn_piece = 'p'
-    else:  # player == 2 (black, P), capturing white (p) on rank 4 (row 4)
+    else:  # Black (P) capturing white (p) on rank 4 (row 4)
         capture_row = end_row + 1
         pawn_row = 4
         pawn_piece = 'P'
 
-    for dc in [-1, 1]:  # check left and right of the moved pawn
+    for dc in [-1, 1]:  # Check left and right of the moved pawn
         adj_col = end_col + dc
         if in_bounds(pawn_row, adj_col) and board[pawn_row][adj_col] == pawn_piece:
             from_sq = pos_to_coord(pawn_row, adj_col)
@@ -304,7 +305,7 @@ def is_check(state, player):
     king_symbol = 'k' if player == 1 else 'K'
     king_pos = None
 
-    # get king placement
+    # Get king placement
     for row in range(8):
         for col in range(8):
             if board[row][col] == king_symbol:
@@ -334,11 +335,6 @@ def generate_pawn_moves(state, row, col, player):
         dest_row = row + direction
         if dest_row == promotion_row:
             for promo in non_pawns:
-                # print(f"[PROMO DEBUG] Adding promotion move: {piece_symbol}{pos_to_coord(row, col)}{pos_to_coord(dest_row, col)}={promo}")
-                # print("piece_symbol:", piece_symbol)
-                # print("pos_to_coord(row, col):", pos_to_coord(row, col))
-                # print("pos_to_coord(dest_row, col):", pos_to_coord(dest_row, col))
-                # print("promo:", promo)
                 moves.append(f"{piece_symbol}{pos_to_coord(row, col)}{pos_to_coord(dest_row, col)}={promo}")
         else:
             moves.append(f"{piece_symbol}{pos_to_coord(row, col)}{pos_to_coord(dest_row, col)}")
@@ -368,7 +364,7 @@ def simulate_move(state, move, player):
     from_sq = move[1:3]
     to_sq = move[3:5]
 
-    # Castle
+    # castle
     if player == 1:
         if move == "O-O":
             new_state["E1K"] = True
@@ -440,7 +436,7 @@ def simulate_move(state, move, player):
         new_state["prev_move"] = move
 
     # Update history
-    new_state["history"].append(new_state["board"])
+    new_state["history"].append(copy.deepcopy(new_state["board"]))
     bstr = board_to_str(new_state["board"])
     new_state["hdict"][bstr] = new_state["hdict"].get(bstr, 0) + 1
 
@@ -572,15 +568,33 @@ def is_3_fold(hdict):
 def is_50_move_rule(history):
     if len(history) <= 101: return False
     if count_pieces(history[-101]) > count_pieces(history[-1]): return False
-    return is_equal_pawns(history[-101], history[-1])
+    return not pawn_moved(history[-101], history[-1])
 
 def is_insufficient_material(board):
-    material = 0
-    pieces = 0 # not counting kings
+    bishops = []
+    knights = 0
+
     for i in range(8):
         for j in range(8):
-            if board[i][j] in piece_values:
-                pieces += 1
-                material += piece_values[board[i][j]]
+            piece = board[i][j]
+            if piece in ('.','k','K'):
+                continue
+            if piece.lower() == 'b':
+                bishops.append((i + j) % 2)
+            elif piece.lower() == 'n':
+                knights += 1
+            else:
+                return False
 
-    return (material == 0 or (material == 3 and pieces == 1))
+    if not bishops and knights == 0:
+        return True
+
+    if len(bishops) == 1 and knights == 0:
+        return True
+    if knights == 1 and not bishops:
+        return True
+
+    if len(bishops) == 2 and knights == 0 and bishops[0] == bishops[1]:
+        return True
+
+    return False

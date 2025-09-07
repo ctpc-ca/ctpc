@@ -7,7 +7,7 @@ import time
 from models import BotSubmission, SampleBot, Tournament, Game, db
 from tournament.core.loader import load_bots
 from tournament.core.results import round_robin
-from tournament.core.results import sandbox_results
+# from tournament.core.results import sandbox_results
 from tournament.bot_runner.swiss import run_swiss_tournament
 
 from tournament.loader import load_game_modules
@@ -44,63 +44,63 @@ def view_tournament(tournament_id):
 
         bot_code = bot_file.read().decode("utf-8")
 
-        if action == "sandbox":
-            game_module = load_game_modules(tournament.game)
-            utils = game_module["utils_code"]
-            gameplay = game_module["gameplay_code"]
-            termination = game_module["termination_code"]
+        # if action == "sandbox":
+        #     game_module = load_game_modules(tournament.game)
+        #     utils = game_module["utils_code"]
+        #     gameplay = game_module["gameplay_code"]
+        #     termination = game_module["termination_code"]
 
-            initial = utils.initial
-            scoring = utils.scoring
-            is_terminal = termination.is_terminal
-            fetch_result = termination.fetch_result
-            is_legal_move = gameplay.is_legal_move
-            make_move = gameplay.make_move
-            move_types = utils.move_types
+        #     initial = utils.initial
+        #     scoring = utils.scoring
+        #     is_terminal = termination.is_terminal
+        #     fetch_result = termination.fetch_result
+        #     is_legal_move = gameplay.is_legal_move
+        #     make_move = gameplay.make_move
+        #     move_types = utils.move_types
 
-            sandbox_result, state_histories, move_histories, match_results = sandbox_results(
-                bot_code,
-                sample_bots,
-                initial=initial,
-                scoring=scoring,
-                is_terminal=is_terminal,
-                fetch_result=fetch_result,
-                is_legal_move=is_legal_move,
-                make_move=make_move,
-                move_types=move_types,
-            )
+        #     sandbox_result, state_histories, move_histories, match_results = sandbox_results(
+        #         bot_code,
+        #         sample_bots,
+        #         initial=initial,
+        #         scoring=scoring,
+        #         is_terminal=is_terminal,
+        #         fetch_result=fetch_result,
+        #         is_legal_move=is_legal_move,
+        #         make_move=make_move,
+        #         move_types=move_types,
+        #     )
 
-            user_stats = {
-                "wins": sum(bot["wins"] for bot in sandbox_result.values()),
-                "draws": sum(bot["draws"] for bot in sandbox_result.values()),
-                "losses": sum(bot["losses"] for bot in sandbox_result.values()),
-                "score": sum(bot["score"] for bot in sandbox_result.values()),
-            }
+        #     user_stats = {
+        #         "wins": sum(bot["wins"] for bot in sandbox_result.values()),
+        #         "draws": sum(bot["draws"] for bot in sandbox_result.values()),
+        #         "losses": sum(bot["losses"] for bot in sandbox_result.values()),
+        #         "score": sum(bot["score"] for bot in sandbox_result.values()),
+        #     }
 
-            format_state = None
-            if state_histories:
-                formatter = game_module["formatter_code"]
-                format_state = formatter.format
+        #     format_state = None
+        #     if state_histories:
+        #         formatter = game_module["formatter_code"]
+        #         format_state = formatter.format
 
-                formatted_history = {
-                    bot1: {
-                        bot2: [format_state(state) if format_state else state for state in history]
-                        for bot2, history in opponents.items()
-                    }
-                    for bot1, opponents in state_histories.items()
-                }
+        #         formatted_history = {
+        #             bot1: {
+        #                 bot2: [format_state(state) if format_state else state for state in history]
+        #                 for bot2, history in opponents.items()
+        #             }
+        #             for bot1, opponents in state_histories.items()
+        #         }
 
-            return render_template("tournament/user_dashboard.html",
-                tournament=tournament,
-                sample_bots=sample_bots,
-                results=sandbox_result,
-                state_histories=formatted_history,
-                move_histories=move_histories,
-                success=success_message,
-                user_stats=user_stats,
-                match_results=match_results)
+        #     return render_template("tournament/user_dashboard.html",
+        #         tournament=tournament,
+        #         sample_bots=sample_bots,
+        #         results=sandbox_result,
+        #         state_histories=formatted_history,
+        #         move_histories=move_histories,
+        #         success=success_message,
+        #         user_stats=user_stats,
+        #         match_results=match_results)
 
-        elif action == "submit":
+        if action == "submit":
             if current_user.role.name != "admin":
                 BotSubmission.query.filter_by(user_id=current_user.id).delete()
                 db.session.commit()
@@ -235,7 +235,7 @@ def run_round_robin(tournament_id):
 def run_swiss(tournament_id):
     tournament = Tournament.query.get_or_404(tournament_id)
     bots = BotSubmission.query.filter_by(tournament_id=tournament.id).all()
-    bot_dict = {bot.name:bot for bot in bots}
+    bot_dict = {bot.name: bot for bot in bots}
 
     game_module = load_game_modules(tournament.game)
     utils = game_module["utils_code"]
@@ -256,7 +256,8 @@ def run_swiss(tournament_id):
     make_move = gameplay.make_move
     move_types = utils.move_types
 
-    top_bots, swiss_scores, pairings_log, state_histories, move_histories = run_swiss_tournament(
+    # Swiss now returns PGNs instead of state/move histories
+    top_bots, swiss_scores, pairings_log, pgn_swiss = run_swiss_tournament(
         bots=bots,
         num_rounds=num_rounds,
         top_k=top_k,
@@ -267,11 +268,13 @@ def run_swiss(tournament_id):
         fetch_result=fetch_result,
         is_legal_move=is_legal_move,
         make_move=make_move,
-        move_types=move_types
+        move_types=move_types,
     )
 
+    # Run RR on the top_k bots
     top_subset = [bot_dict[name] for name in top_bots]
-    final_results, state_histories, move_histories, match_results = round_robin(
+    # Round-robin now returns PGNs as well
+    final_results, pgn_round_robin, match_results = round_robin(
         bots=top_subset,
         verbose=False,
         initial=initial,
@@ -280,11 +283,11 @@ def run_swiss(tournament_id):
         fetch_result=fetch_result,
         is_legal_move=is_legal_move,
         make_move=make_move,
-        move_types=move_types
+        move_types=move_types,
     )
 
     sorted_scores = sorted(
-        swiss_scores.items(),  # list of (bot, {score, sb})
+        swiss_scores.items(),  # list of (bot, {score, sb, win/draw/loss})
         key=lambda item: (-item[1]["score"], -item[1]["sb"])
     )
 
@@ -295,8 +298,8 @@ def run_swiss(tournament_id):
         swiss_log=pairings_log,
         scores=sorted_scores,
         qualified=top_k,
-        state_histories=state_histories,
-        move_histories=move_histories
+        pgn_swiss=pgn_swiss,               # defaultdict(str->defaultdict(list[str]))
+        pgn_round_robin=pgn_round_robin,   # defaultdict(str->defaultdict(str))
     )
 
 @tournament_bp.route("/tournaments/<int:tournament_id>/submit_sample_bot", methods=["POST"])

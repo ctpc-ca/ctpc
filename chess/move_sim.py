@@ -6,8 +6,6 @@ from game_files.utils import initial
 def move(state, player):
     return dfs.dfsbasic(material_eval.material_eval, state, player)
 
-
-
 def format(state):
     if not state: return None
     board = state["board"]

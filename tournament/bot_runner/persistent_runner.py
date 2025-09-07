@@ -1,20 +1,15 @@
-import subprocess
-import json
-import select
-import traceback
-import sys
+import subprocess, json, select, traceback, sys, uuid
 
 class PersistentDockerBot:
-    def __init__(self, bot_code, container_name):
-        self.container_name = container_name
+    def __init__(self, bot_code, container_name_prefix):
+        # Unique name per instance
+        self.container_name = f"{container_name_prefix}-{uuid.uuid4().hex[:8]}"
         self.bot_code = bot_code
 
-        # Clean up any old container
-        subprocess.run([
-            "docker", "rm", "-f", self.container_name
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Clean up old leftovers with same name
+        subprocess.run(["docker","rm","-f", self.container_name],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        # This string becomes the "bot runner" program inside the container
         docker_program_code = "\n".join([
             "import sys, json, types, traceback",
             "namespace = types.SimpleNamespace()",
@@ -25,8 +20,10 @@ class PersistentDockerBot:
             "    code.append(line)",
             "exec(compile(''.join(code), '<stdin>', 'exec'), namespace.__dict__)",
             "while True:",
+            "    line = sys.stdin.readline()",
+            "    if not line: break",
             "    try:",
-            "        raw = json.loads(sys.stdin.readline())",
+            "        raw = json.loads(line)",
             "        state, player = raw",
             "        result = namespace.move(state, player)",
             "        print(json.dumps({ 'ok': result }), flush=True)",
@@ -38,33 +35,29 @@ class PersistentDockerBot:
 
         self.proc = subprocess.Popen(
             [
-                "docker", "run", "-i", "--rm",
+                "docker","run","-i","--rm",
                 "--name", self.container_name,
-                "--network", "none",
-                "--memory", "128m",
-                "--memory-swap", "128m",
+                "--label","ctpc=bot",
+                "--network","none",
+                "--memory","128m","--memory-swap","128m",
                 "--oom-kill-disable=false",
-                "--cpus", "0.5",
-                "--pids-limit", "64",
+                "--cpus","0.5",
+                "--pids-limit","64",
                 "--read-only",
-                "--security-opt", "no-new-privileges",
+                "--security-opt","no-new-privileges",
                 "--cap-drop=ALL",
-                "--tmpfs", "/tmp:exec,nosuid,nodev,size=64m",
-                "--ulimit", "nofile=64:64",
-                "--ulimit", "nproc=32:32",
-                "--device-read-bps", "/dev/null:1mb",
-                "--device-read-iops", "/dev/null:10",
+                "--tmpfs","/tmp:exec,nosuid,nodev,size=64m",
+                "--ulimit","nofile=64:64",
+                "--ulimit","nproc=32:32",
+                "--device-read-bps","/dev/null:1mb",
+                "--device-read-iops","/dev/null:10",
                 "bot-runner",
-                "env", "PYTHONPATH=/app",
-                "python3", "-u", "-c", docker_program_code
+                "env","PYTHONPATH=/app",
+                "python3","-u","-c", docker_program_code
             ],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
 
-        # Send bot code to container
         self.proc.stdin.write(self.bot_code + "\n__END__\n")
         self.proc.stdin.flush()
 
@@ -115,4 +108,32 @@ class PersistentDockerBot:
                 print(f"[stderr] {err_line.strip()}")
 
     def shutdown(self):
-        self.proc.kill()
+        try:
+            if self.proc.stdin and not self.proc.stdin.closed:
+                self.proc.stdin.close()
+        except Exception:
+            pass
+
+        try:
+            self.proc.terminate()
+        except Exception:
+            pass
+
+        try:
+            self.proc.wait(timeout=3)
+        except Exception:
+            try:
+                self.proc.kill()
+            except Exception:
+                pass
+            try:
+                self.proc.wait(timeout=2)
+            except Exception:
+                pass
+
+        try:
+            subprocess.run(["docker", "rm", "-f", self.container_name],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+

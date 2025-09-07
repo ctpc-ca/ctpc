@@ -14,7 +14,7 @@
     <input type="file" name="bot_file" accept=".py" required><br><br>
 
     <div class="button-row">
-        <button type="submit" name="action" value="sandbox">Run Against Sample Bots</button>
+        <!-- <button type="submit" name="action" value="sandbox">Run Against Sample Bots</button> -->
         <button type="submit" name="action" value="submit">Submit Officially</button>
     </div>
 </form>
@@ -26,7 +26,7 @@ session["move_histories"] = move_histories
 session["match_results"] = match_results
 -->
 
-{% if results %}
+<!-- {% if results %}
     <h2>Sandbox Leaderboard</h2>
     <table class="form left-align" border="1" cellpadding="8">
         <thead>
@@ -104,5 +104,5 @@ State:
             {% endfor %}
         {% endfor %}
     {% endif %}
-{% endif %}
+{% endif %} -->
 {% endblock %}
