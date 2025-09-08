@@ -67,7 +67,7 @@ class PersistentDockerBot:
             self.proc.stdin.write(msg)
             self.proc.stdin.flush()
 
-            if select.select([self.proc.stdout], [], [], 1)[0]:
+            if select.select([self.proc.stdout], [], [], 1.25)[0]:
                 output = self.proc.stdout.readline().strip()
 
                 if not output:

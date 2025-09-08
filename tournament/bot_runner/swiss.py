@@ -206,9 +206,20 @@ def run_swiss_tournament(bots, num_rounds, top_k, verbose=False, *, initial, sco
 
         top_bots = sorted(bot_list, key=lambda b: (-scores[b]["score"], -scores[b]["sb"], random.random()))[:top_k]
 
-        if verbose:
-            print("TOP BOTS", top_bots)
-            print("SCORES", scores)
+        print("TOP BOTS", top_bots)
+
+        # Pretty leaderboard
+        print("\nSwiss Leaderboard:")
+        print(f"{'Bot':<40} {'Score':<6} {'SB':<6} {'W':<3} {'D':<3} {'L':<3}")
+        print("-" * 70)
+        for bot, data in sorted(
+            scores.items(),
+            key=lambda x: (-x[1]['score'], -x[1]['sb'], x[0])
+        ):
+            print(
+                f"{bot:<40} {data['score']:<6.1f} {data['sb']:<6.2f} "
+                f"{data['win']:<3} {data['draw']:<3} {data['loss']:<3}"
+            )
 
         return top_bots, scores, pairings_log, pgn_histories
 

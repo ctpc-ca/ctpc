@@ -5,7 +5,7 @@ def is_terminal(state, move):
     legal_moves_black = chess_utils.get_legal_moves(state, 2)
 
     # checkmate/stalemate
-    if (len(legal_moves_white) == 0 and move % 2 == 0) or (len(legal_moves_black) == 0 and move % 2 == 1): return True
+    if (len(legal_moves_white) == 0 and move % 2 == 1) or (len(legal_moves_black) == 0 and move % 2 == 0): return True
 
     # 3-fold repetition
     if chess_utils.is_3_fold(state["hdict"]): return True
